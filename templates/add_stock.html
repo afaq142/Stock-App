@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Add Stock Data</h2>
+    
+    <div class="row">
+        <!-- Excel Upload Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Import from Excel</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Select Company</label>
+                            <select class="form-select" name="company" required>
+                                <option value="">Choose Company</option>
+                                {% for company in companies %}
+                                <option value="{{ company.id }}">{{ company.symbol }} - {{ company.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Excel File</label>
+                            <input type="file" class="form-control" name="excel_file" 
+                                   accept=".xlsx,.xls" required>
+                            <div class="form-text">
+                                Required columns: Date, Open, High, Low, Close, Volume
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Upload Excel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Entry Section -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5>Manual Entry</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label>Select Company</label>
+                            <select class="form-select" name="company" required>
+                                <option value="">Choose Company</option>
+                                {% for company in companies %}
+                                <option value="{{ company.id }}">{{ company.symbol }} - {{ company.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Date</label>
+                            <input type="date" class="form-control" name="date" 
+                                   id="dateInput" required>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label>Open Price</label>
+                                <input type="number" step="0.01" class="form-control" 
+                                       name="open" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label>High Price</label>
+                                <input type="number" step="0.01" class="form-control" 
+                                       name="high" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Low Price</label>
+                                <input type="number" step="0.01" class="form-control" 
+                                       name="low" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Close Price</label>
+                                <input type="number" step="0.01" class="form-control" 
+                                       name="close" required>
+                            </div>
+                            <div class="col-12">
+                                <label>Volume</label>
+                                <input type="number" class="form-control" 
+                                       name="volume" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="bi bi-save"></i> Save Entry
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Date validation to prevent weekend selection
+document.getElementById('dateInput').addEventListener('input', function(e) {
+    const date = new Date(e.target.value);
+    const day = date.getUTCDay();
+    
+    if(day === 0 || day === 6) {
+        e.target.setCustomValidity('Weekend dates are not allowed');
+    } else {
+        e.target.setCustomValidity('');
+    }
+});
+
+// File input validation
+document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+    const allowedExtensions = /(\.xls|\.xlsx)$/i;
+    if (!allowedExtensions.exec(e.target.value)) {
+        alert('Please upload an Excel file (.xls or .xlsx)');
+        e.target.value = '';
+    }
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+}
+
+.form-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.btn-success, .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+}
+</style>
+{% endblock %}

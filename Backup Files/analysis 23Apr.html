@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">{{ company.name }} ({{ company.symbol }}) Analysis</h2>
+    
+    <div class="row">
+        <!-- Trading Plan -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Trading Plan (Professional Strategy)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tr class="table-success">
+                                <th>Entry Point</th>
+                                <td>{{ "%.2f"|format(trading_plan.entry) }}</td>
+                            </tr>
+                            <tr class="table-danger">
+                                <th>Stop Loss</th>
+                                <td>{{ "%.2f"|format(trading_plan.stop_loss) }} ({{ trading_plan.risk_percentage }}% risk)</td>
+                            </tr>
+                            <tr class="table-info">
+                                <th>Target</th>
+                                <td>{{ "%.2f"|format(trading_plan.target) }}</td>
+                            </tr>
+                            <tr class="table-warning">
+                                <th>Risk/Reward Ratio</th>
+                                <td>1:{{ trading_plan.risk_reward }}</td>
+                            </tr>
+                            <tr>
+                                <th>ATR (14)</th>
+                                <td>{{ "%.2f"|format(trading_plan.atr_value) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <strong>Professional Strategy:</strong> 
+                        <ul>
+                            <li>Entry at current price with confirmation</li>
+                            <li>Stop loss at 2.5x ATR below entry</li>
+                            <li>Target at 3:1 reward ratio</li>
+                            <li>Adjust position size to risk 1-2% of capital</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Indicators -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5>Technical Indicators</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    SMA 20
+                                    <span class="badge bg-{{ 'success' if latest.close > indicators.SMA20 else 'danger' }} rounded-pill">
+                                        {{ "%.2f"|format(indicators.SMA20) }}
+                                    </span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    SMA 50
+                                    <span class="badge bg-{{ 'success' if latest.close > indicators.SMA50 else 'danger' }} rounded-pill">
+                                        {{ "%.2f"|format(indicators.SMA50) }}
+                                    </span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    SMA 200
+                                    <span class="badge bg-{{ 'success' if latest.close > indicators.SMA200 else 'danger' }} rounded-pill">
+                                        {{ "%.2f"|format(indicators.SMA200) }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    RSI (14)
+                                    <span class="badge bg-{{ 'danger' if indicators.RSI > 70 else 'success' if indicators.RSI < 30 else 'primary' }} rounded-pill">
+                                        {{ "%.2f"|format(indicators.RSI) }}
+                                    </span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    ATR (14)
+                                    <span class="badge bg-primary rounded-pill">{{ "%.2f"|format(indicators.ATR) }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    MACD Hist
+                                    <span class="badge bg-{{ 'success' if indicators.Histogram > 0 else 'danger' }} rounded-pill">
+                                        {{ "%.4f"|format(indicators.Histogram) }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Charts -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5>Technical Charts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div id="candlestick-chart" style="height: 500px;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="rsi-chart" style="height: 500px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support/Resistance & Fibonacci -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning">
+                    <h5>Support Levels</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for level in support_levels %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ "%.2f"|format(level) }}
+                            <span class="badge bg-danger rounded-pill">
+                                {{ "%.2f"|format((latest.close - level)/latest.close*100) }}% below
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5>Resistance Levels</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for level in resistance_levels %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ "%.2f"|format(level) }}
+                            <span class="badge bg-success rounded-pill">
+                                {{ "%.2f"|format((level - latest.close)/latest.close*100) }}% above
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5>Fibonacci Levels</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for level, value in fib_levels.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ level }}</span>
+                            <span class="badge bg-{{ 'primary' if value < latest.close else 'warning' }} rounded-pill">
+                                {{ "%.2f"|format(value) }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.20.0.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Candlestick Chart with Bollinger Bands
+    const candlestickTrace = {
+        x: {{ stock_dates | tojson | safe }},
+        open: {{ open_prices | tojson | safe }},
+        high: {{ high_prices | tojson | safe }},
+        low: {{ low_prices | tojson | safe }},
+        close: {{ close_prices | tojson | safe }},
+        type: 'candlestick',
+        name: 'Price',
+        increasing: {line: {color: 'green'}},
+        decreasing: {line: {color: 'red'}}
+    };
+
+    const bbUpperTrace = {
+        x: {{ stock_dates | tojson | safe }},
+        y: {{ indicators.Upper_BB | tojson | safe }},
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Upper BB',
+        line: {color: 'blue', width: 1}
+    };
+
+    const bbLowerTrace = {
+        x: {{ stock_dates | tojson | safe }},
+        y: {{ indicators.Lower_BB | tojson | safe }},
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Lower BB',
+        line: {color: 'blue', width: 1}
+    };
+
+    const sma20Trace = {
+        x: {{ stock_dates | tojson | safe }},
+        y: {{ indicators.SMA20 | tojson | safe }},
+        type: 'scatter',
+        mode: 'lines',
+        name: 'SMA 20',
+        line: {color: 'orange', width: 1}
+    };
+
+    const candlestickLayout = {
+        title: '{{ company.symbol }} Price with Indicators',
+        xaxis: { title: 'Date', rangeslider: {visible: false} },
+        yaxis: { title: 'Price' },
+        showlegend: true,
+        plot_bgcolor: '#f8f9fa',
+        paper_bgcolor: '#f8f9fa'
+    };
+
+    Plotly.newPlot('candlestick-chart', 
+        [candlestickTrace, bbUpperTrace, bbLowerTrace, sma20Trace], 
+        candlestickLayout
+    );
+
+    // RSI Chart
+    const rsiTrace = {
+        x: {{ stock_dates | tojson | safe }},
+        y: {{ indicators.RSI | tojson | safe }},
+        type: 'scatter',
+        mode: 'lines',
+        name: 'RSI (14)',
+        line: {color: 'purple', width: 2}
+    };
+
+    const rsiLayout = {
+        title: 'Relative Strength Index',
+        xaxis: { title: 'Date' },
+        yaxis: { 
+            title: 'RSI',
+            range: [0, 100]
+        },
+        shapes: [
+            {type: 'line', x0: 0, x1: 1, y0: 70, y1: 70, line: {color: 'red', width: 1}},
+            {type: 'line', x0: 0, x1: 1, y0: 30, y1: 30, line: {color: 'green', width: 1}}
+        ],
+        plot_bgcolor: '#f8f9fa',
+        paper_bgcolor: '#f8f9fa'
+    };
+
+    Plotly.newPlot('rsi-chart', [rsiTrace], rsiLayout);
+});
+</script>
+{% endblock %}

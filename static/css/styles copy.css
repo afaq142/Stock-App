@@ -1,0 +1,81 @@
+body {
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping for smaller widths */
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #80bdff;
+}
+
+/* Chart containers */
+#chart-container, #analysis-chart {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    margin-bottom: 20px;
+}
+
+/* Tables */
+.data-table {
+    margin-top: 20px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Stock cards */
+.view-stock {
+    transition: transform 0.2s;
+}
+
+.view-stock:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .list-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #chart-container, #analysis-chart {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    .data-table {
+        margin-top: 15px;
+    }
+
+    .form-control {
+        width: 100%;
+    }
+
+    .table-responsive {
+        font-size: 14px;
+    }
+}

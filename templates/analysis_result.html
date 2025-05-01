@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h2>{{ company.name }} ({{ company.symbol }}) - Technical Analysis</h2>
+                <small class="fst-italic">Generated on {{ current_time.strftime('%Y-%m-%d at %H:%M') }}</small>
+            </div>
+            <a href="{{ url_for('plain_analysis') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+        
+        <div class="card-body">
+            <!-- Current Status -->
+            <div class="analysis-section">
+                <h4 class="section-title">📊 Current Status</h4>
+                <div class="analysis-content">
+                    <p><strong>Price:</strong> ${{ "%.2f"|format(latest.close) }}</p>
+                    <p class="{{ 'text-success' if price_change_5d >= 0 else 'text-danger' }}">
+                        <strong>5-Day Change:</strong> {{ "%+.2f"|format(price_change_5d) }}%
+                    </p>
+                    <p><strong>Today's Range:</strong> ${{ "%.2f"|format(latest.low) }} - ${{ "%.2f"|format(latest.high) }}</p>
+                </div>
+            </div>
+
+            <!-- Trading Recommendation -->
+            <div class="analysis-section {{ 'bg-buy' if recommendation == 'BUY' else 'bg-sell' if recommendation == 'SELL' else 'bg-hold' }}">
+                <h4 class="section-title">📈 Trading Recommendation</h4>
+                <div class="analysis-content">
+                    <h3 class="{{ 'text-success' if recommendation == 'BUY' else 'text-danger' if recommendation == 'SELL' else 'text-warning' }}">
+                        {{ recommendation }}
+                    </h3>
+                    <p>{{ recommendation_explanation }}</p>
+                </div>
+            </div>
+
+            <!-- Trading Plan -->
+            <div class="analysis-section bg-plan">
+                <h4 class="section-title">🎯 Trading Plan</h4>
+                <div class="analysis-content">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Entry Zone:</strong><br>${{ "%.2f"|format(trading_plan.entry) }} - ${{ "%.2f"|format(trading_plan.entry*1.01) }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Stop Loss:</strong><br>${{ "%.2f"|format(trading_plan.stop_loss) }}<br>({{ "%.1f"|format((trading_plan.entry-trading_plan.stop_loss)/trading_plan.entry*100) }}% risk)</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Price Target:</strong><br>${{ "%.2f"|format(trading_plan.target) }}<br>({{ "%.1f"|format(trading_plan.target_pct) }}% gain)</p>
+                        </div>
+                    </div>
+                    <p class="mt-2"><strong>Risk/Reward Ratio:</strong> 1:{{ trading_plan.risk_reward }} (For every $1 risked, potential ${{ trading_plan.risk_reward }} gain)</p>
+                </div>
+            </div>
+
+            <!-- Trend Analysis -->
+            <div class="analysis-section">
+                <h4 class="section-title">📈 Trend Analysis</h4>
+                <div class="analysis-content">
+                    <p>{{ trend_analysis_text }}</p>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="trend-card {{ 'bg-up' if 'Bullish' in short_term_trend else 'bg-down' }}">
+                                <h5>Short-Term</h5>
+                                <p>{{ short_term_trend }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="trend-card {{ 'bg-up' if 'Bullish' in medium_term_trend else 'bg-down' }}">
+                                <h5>Medium-Term</h5>
+                                <p>{{ medium_term_trend }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="trend-card {{ 'bg-up' if 'Bullish' in long_term_trend else 'bg-down' }}">
+                                <h5>Long-Term</h5>
+                                <p>{{ long_term_trend }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Levels -->
+            <div class="analysis-section">
+                <h4 class="section-title">🔍 Key Levels</h4>
+                <div class="analysis-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-shield-fill-check text-success"></i> Support Levels</h5>
+                            <ul class="level-list">
+                                {% for level in support_levels[:3] %}
+                                <li>
+                                    <span class="price">${{ "%.2f"|format(level.price) }}</span>
+                                    <span class="badge bg-{{ 'danger' if level.strength == 'Strong' else 'warning' }}">
+                                        {{ level.strength }} Support
+                                    </span>
+                                    <small>Tested {{ level.touches }} times</small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-shield-fill-x text-danger"></i> Resistance Levels</h5>
+                            <ul class="level-list">
+                                {% for level in resistance_levels[:3] %}
+                                <li>
+                                    <span class="price">${{ "%.2f"|format(level.price) }}</span>
+                                    <span class="badge bg-{{ 'danger' if level.strength == 'Strong' else 'warning' }}">
+                                        {{ level.strength }} Resistance
+                                    </span>
+                                    <small>Tested {{ level.touches }} times</small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Indicators -->
+            <div class="analysis-section">
+                <h4 class="section-title">⚙️ Technical Indicators</h4>
+                <div class="analysis-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="indicator-list">
+                                <li>
+                                    <strong>RSI (14-day):</strong> 
+                                    <span class="{{ 'text-danger' if latest.RSI > 70 else 'text-success' if latest.RSI < 30 else '' }}">
+                                        {{ "%.1f"|format(latest.RSI) }}
+                                    </span>
+                                    - {{ 'Overbought (>70)' if latest.RSI > 70 else 'Oversold (<30)' if latest.RSI < 30 else 'Neutral' }}
+                                </li>
+                                <li>
+                                    <strong>MACD:</strong> 
+                                    {{ 'Bullish' if latest.MACD > latest.MACD_signal else 'Bearish' }} momentum
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="indicator-list">
+                                <li>
+                                    <strong>50/200-day Averages:</strong> 
+                                    {{ 'Golden Cross' if latest.SMA50 > latest.SMA200 else 'Death Cross' }}
+                                </li>
+                                <li>
+                                    <strong>Bollinger Bands:</strong> 
+                                    Price is {{ 'near upper band' if latest['BB_%B'] > 0.8 else 'near lower band' if latest['BB_%B'] < 0.2 else 'in middle range' }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Thoughts -->
+            <div class="analysis-section bg-thoughts">
+                <h4 class="section-title">💡 Final Thoughts</h4>
+                <div class="analysis-content">
+                    <p>{{ final_thoughts }}</p>
+                    <p class="mb-0 text-muted"><small>Analysis generated at {{ current_time.strftime('%H:%M') }}. Next update available after market close.</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .analysis-section {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .section-title {
+        color: #2c3e50;
+        border-bottom: 2px solid #f1f1f1;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .bg-buy { background-color: #e6f7ee !important; border-left: 4px solid #28a745; }
+    .bg-sell { background-color: #fde8e8 !important; border-left: 4px solid #dc3545; }
+    .bg-hold { background-color: #fff4e6 !important; border-left: 4px solid #fd7e14; }
+    .bg-plan { background-color: #e6f3ff !important; border-left: 4px solid #17a2b8; }
+    .bg-thoughts { background-color: #f8f9fa !important; border-left: 4px solid #6c757d; }
+    
+    .trend-card {
+        padding: 1rem;
+        border-radius: 8px;
+        height: 100%;
+    }
+    
+    .bg-up { background-color: rgba(40, 167, 69, 0.1); border-left: 4px solid #28a745; }
+    .bg-down { background-color: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545; }
+    
+    .level-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .level-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .price {
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .indicator-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .indicator-list li {
+        padding: 0.3rem 0;
+    }
+</style>
+{% endblock %}

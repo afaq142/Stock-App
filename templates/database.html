@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Stock Database Management</h2>
+    
+    <!-- Search and Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by company or symbol...">
+                </div>
+                <div class="col-md-4">
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="resetFilters">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Cards with Stock Data -->
+    {% for company in companies %}
+    <div class="card mb-4 company-card" data-symbol="{{ company.symbol }}" data-name="{{ company.name }}">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">{{ company.name }} ({{ company.symbol }})</h5>
+                <small>Last Updated: {{ company.stock_data[0].date.strftime('%d %b %Y') if company.stock_data else 'No data' }}</small>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-danger me-2" onclick="confirmDeleteCompany({{ company.id }})">
+                    <i class="bi bi-trash"></i> Delete Company
+                </button>
+                <button class="btn btn-sm btn-success" data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ company.id }}">
+                    <i class="bi bi-chevron-down"></i> Toggle Data
+                </button>
+            </div>
+        </div>
+        
+        <div class="collapse show" id="collapse{{ company.id }}">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Open</th>
+                                <th>High</th>
+                                <th>Low</th>
+                                <th>Close</th>
+                                <th>Volume</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in company.stock_data %}
+                            <tr class="stock-row" data-date="{{ stock.date.strftime('%Y-%m-%d') }}">
+                                <td>{{ stock.date.strftime('%d %b %Y') }}</td>
+                                <td>{{ "%.2f"|format(stock.open) }}</td>
+                                <td>{{ "%.2f"|format(stock.high) }}</td>
+                                <td>{{ "%.2f"|format(stock.low) }}</td>
+                                <td>{{ "%.2f"|format(stock.close) }}</td>
+                                <td>{{ "{:,}".format(stock.volume) }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" 
+                                            onclick="openEditModal({{ stock.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            onclick="confirmDelete({{ stock.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Edit Stock Entry</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="editModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add to Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Add New Stock Data</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStockForm">
+                    <div class="mb-3">
+                        <label class="form-label">Company</label>
+                        <select class="form-select" name="company" required>
+                            {% for company in companies %}
+                            <option value="{{ company.id }}">{{ company.symbol }} - {{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Open</label>
+                            <input type="number" step="0.01" class="form-control" name="open" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">High</label>
+                            <input type="number" step="0.01" class="form-control" name="high" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Low</label>
+                            <input type="number" step="0.01" class="form-control" name="low" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Close</label>
+                            <input type="number" step="0.01" class="form-control" name="close" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Volume</label>
+                            <input type="number" class="form-control" name="volume" required>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">Add Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    document.querySelectorAll('.company-card').forEach(card => {
+        const symbol = card.dataset.symbol.toLowerCase();
+        const name = card.dataset.name.toLowerCase();
+        card.style.display = (symbol.includes(searchTerm) || name.includes(searchTerm)) ? '' : 'none';
+    });
+});
+
+// Date filter
+document.getElementById('dateFilter').addEventListener('change', function() {
+    const filterDate = this.value;
+    document.querySelectorAll('.stock-row').forEach(row => {
+        row.style.display = filterDate ? (row.dataset.date === filterDate ? '' : 'none') : '';
+    });
+});
+
+// Reset filters
+document.getElementById('resetFilters').addEventListener('click', function() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFilter').value = '';
+    document.querySelectorAll('.company-card, .stock-row').forEach(el => {
+        el.style.display = '';
+    });
+});
+
+// CRUD Operations
+function confirmDelete(stockId) {
+    if (confirm('Are you sure you want to delete this stock entry?')) {
+        fetch(`/delete-stock/${stockId}`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting entry');
+            }
+        });
+    }
+}
+
+function confirmDeleteCompany(companyId) {
+    if (confirm('Delete this company and ALL its stock data?')) {
+        fetch(`/delete-company/${companyId}`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting company');
+            }
+        });
+    }
+}
+
+function openEditModal(stockId) {
+    fetch(`/edit-stock/${stockId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('editModalBody').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('editModal'));
+            modal.show();
+        });
+}
+
+// Initialize modals
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for add stock form
+    document.getElementById('addStockForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        fetch('/add-stock', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error adding stock data');
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.company-card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.3s ease;
+}
+
+.company-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.card-header {
+    cursor: pointer;
+}
+
+.bi {
+    margin-right: 5px;
+}
+</style>
+{% endblock %}

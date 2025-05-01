@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Swing Trading Dashboard</h2>
+        <div>
+            <button id="refreshDashboard" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Dashboard
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Minimum ADX</label>
+                    <input type="number" class="form-control" id="minAdx" value="5" min="0" max="100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Minimum Volume</label>
+                    <select class="form-select" id="volumeFilter">
+                        <option value="0">Any Volume</option>
+                        <option value="1000000">1M+</option>
+                        <option value="5000000">5M+</option>
+                        <option value="10000000">10M+</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Price Change (5D)</label>
+                    <select class="form-select" id="priceChangeFilter">
+                        <option value="all">Any Change</option>
+                        <option value="positive">Positive Only</option>
+                        <option value="negative">Negative Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Setup Type</label>
+                    <select class="form-select" id="setupFilter">
+                        <option value="all">All Setups</option>
+                        <option value="breakout">Breakouts</option>
+                        <option value="pullback">Pullbacks</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Swing Trade Opportunities -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">Potential Swing Trades</h5>
+                <small class="fst-italic">Data as of {{ current_time.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <div>
+                <span class="badge bg-light text-primary" id="visibleCount">{{ swing_opportunities|length }}</span>
+                <span class="text-white"> opportunities found</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="swingTradesTable">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Price</th>
+                            <th>Change (5D)</th>
+                            <th>Setup</th>
+                            <th>Entry Zone</th>
+                            <th>Stop Loss</th>
+                            <th>Target</th>
+                            <th>R/R</th>
+                            <th>Trend Strength</th>
+                            <th>Volume</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for opportunity in swing_opportunities %}
+                        <tr data-adx="{{ opportunity.adx }}" 
+                            data-volume="{{ opportunity.volume }}" 
+                            data-price-change="{{ opportunity.price_change_5d }}" 
+                            data-setup="{{ opportunity.setup }}">
+                            <td>
+                                <strong>{{ opportunity.symbol }}</strong><br>
+                                <small>{{ opportunity.company_name }}</small>
+                            </td>
+                            <td>${{ "%.2f"|format(opportunity.current_price) }}</td>
+                            <td class="{{ 'text-success' if opportunity.price_change_5d >= 0 else 'text-danger' }}">
+                                {{ "%+.2f"|format(opportunity.price_change_5d) }}%
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if opportunity.setup == 'breakout' else 'warning text-dark' }}">
+                                    {{ opportunity.setup|capitalize }}
+                                </span>
+                                <small class="d-block">{{ opportunity.setup_description }}</small>
+                            </td>
+                            <td>${{ "%.2f"|format(opportunity.entry_low) }} - ${{ "%.2f"|format(opportunity.entry_high) }}</td>
+                            <td>${{ "%.2f"|format(opportunity.stop_loss) }}</td>
+                            <td>${{ "%.2f"|format(opportunity.target) }}</td>
+                            <td>1:{{ "%.1f"|format(opportunity.risk_reward) }}</td>
+                            <td>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-{{ 'success' if opportunity.trend_strength > 60 else 'danger' if opportunity.trend_strength < 40 else 'warning' }}" 
+                                         style="width: {{ opportunity.trend_strength }}%">
+                                    </div>
+                                </div>
+                                <small>{{ opportunity.trend_strength }}% ({{ opportunity.trend_direction }})</small>
+                            </td>
+                            <td>
+                                {% if opportunity.volume_pct_change >= 0 %}
+                                    <i class="bi bi-arrow-up text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down text-danger"></i>
+                                {% endif %}
+                                {{ "%.0f"|format(opportunity.volume_pct_change) }}%
+                                <small class="d-block">{{ "{:,.0f}".format(opportunity.volume) }} shares</small>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('analyze', symbol=opportunity.symbol) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-graph-up"></i> Analyze
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Overview -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5>Top Bullish Opportunities (ADX > 25)</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_bullish %}
+                    <div class="list-group">
+                        {% for stock in top_bullish %}
+                        <a href="{{ url_for('analyze', symbol=stock.symbol) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ stock.symbol }} - {{ stock.company_name }}</h6>
+                                <span class="badge bg-success rounded-pill">ADX {{ "%.1f"|format(stock.adx) }}</span>
+                            </div>
+                            <p class="mb-1">Entry: ${{ "%.2f"|format(stock.entry_low) }}-${{ "%.2f"|format(stock.entry_high) }}</p>
+                            <p class="mb-1">Target: ${{ "%.2f"|format(stock.target) }} ({{ "%.1f"|format(stock.risk_reward) }}:1 RR)</p>
+                            <small>Volume: {{ "{:,.0f}".format(stock.volume) }} ({{ "%+.0f"|format(stock.volume_pct_change) }}%)</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">No strong bullish opportunities found</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5>Top Bearish Opportunities (ADX > 25)</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_bearish %}
+                    <div class="list-group">
+                        {% for stock in top_bearish %}
+                        <a href="{{ url_for('analyze', symbol=stock.symbol) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ stock.symbol }} - {{ stock.company_name }}</h6>
+                                <span class="badge bg-danger rounded-pill">ADX {{ "%.1f"|format(stock.adx) }}</span>
+                            </div>
+                            <p class="mb-1">Entry: ${{ "%.2f"|format(stock.entry_low) }}-${{ "%.2f"|format(stock.entry_high) }}</p>
+                            <p class="mb-1">Target: ${{ "%.2f"|format(stock.target) }} ({{ "%.1f"|format(stock.risk_reward) }}:1 RR)</p>
+                            <small>Volume: {{ "{:,.0f}".format(stock.volume) }} ({{ "%+.0f"|format(stock.volume_pct_change) }}%)</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">No strong bearish opportunities found</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 4px;
+    }
+    .progress-bar {
+        border-radius: 4px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    .list-group-item {
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    .list-group-item:hover {
+        border-left-color: #0d6efd;
+        transform: translateX(2px);
+    }
+    #visibleCount {
+        font-size: 1.1rem;
+        padding: 0.35rem 0.7rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply filters when page loads
+    applyFilters();
+    
+    // Filter functionality
+    function applyFilters() {
+        const minAdx = parseInt(document.getElementById('minAdx').value) || 0;
+        const minVolume = parseInt(document.getElementById('volumeFilter').value) || 0;
+        const priceChangeFilter = document.getElementById('priceChangeFilter').value;
+        const setupFilter = document.getElementById('setupFilter').value;
+        
+        let visibleCount = 0;
+        
+        document.querySelectorAll('#swingTradesTable tbody tr').forEach(row => {
+            const adx = parseInt(row.dataset.adx);
+            const volume = parseInt(row.dataset.volume);
+            const priceChange = parseFloat(row.dataset.priceChange);
+            const setup = row.dataset.setup;
+            
+            const adxMatch = adx >= minAdx;
+            const volumeMatch = volume >= minVolume;
+            const priceChangeMatch = 
+                priceChangeFilter === 'all' || 
+                (priceChangeFilter === 'positive' && priceChange >= 0) ||
+                (priceChangeFilter === 'negative' && priceChange < 0);
+            const setupMatch = setupFilter === 'all' || setup === setupFilter;
+            
+            if (adxMatch && volumeMatch && priceChangeMatch && setupMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update visible count
+        document.getElementById('visibleCount').textContent = visibleCount;
+    }
+    
+    // Add event listeners to all filters
+    document.getElementById('minAdx').addEventListener('input', applyFilters);
+    document.getElementById('volumeFilter').addEventListener('change', applyFilters);
+    document.getElementById('priceChangeFilter').addEventListener('change', applyFilters);
+    document.getElementById('setupFilter').addEventListener('change', applyFilters);
+    
+    // Refresh dashboard
+    document.getElementById('refreshDashboard').addEventListener('click', function() {
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+        setTimeout(() => location.reload(), 500);
+    });
+});
+</script>
+{% endblock %}

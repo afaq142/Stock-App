@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="my-4">Trading Decision System</h2>
+    
+    <form method="POST" class="mb-5">
+        <div class="row">
+            <div class="col-md-8">
+                <select class="form-select" name="symbol" required>
+                    <option value="">Select Company</option>
+                    {% for company in companies %}
+                    <option value="{{ company.symbol }}" 
+                            {% if selected_company and selected_company.id == company.id %}selected{% endif %}>
+                        {{ company.name }} ({{ company.symbol }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    Analyze <i class="bi bi-graph-up"></i>
+                </button>
+            </div>
+        </div>
+    </form>
+
+    {% if analysis %}
+    <div class="decision-results">
+        <!-- Recommendation Card -->
+        <div class="card mb-4 bg-{{ 'success' if analysis.recommendation == 'BUY' else 'danger' if analysis.recommendation == 'SELL' else 'warning' }}">
+            <div class="card-body">
+                <h3 class="card-title">
+                    {{ analysis.recommendation }} Recommendation
+                    <i class="bi bi-{{ 'arrow-up-circle' if analysis.recommendation == 'BUY' else 'arrow-down-circle' if analysis.recommendation == 'SELL' else 'dash-circle' }}"></i>
+                </h3>
+                <p class="lead">{{ analysis.summary }}</p>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">Price Action</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">Current Price</div>
+                            <div class="col-6 text-end">{{ "%.2f"|format(analysis.current_price) }}</div>
+                            <div class="col-6">24h Change</div>
+                            <div class="col-6 text-end {{ 'text-success' if analysis.price_change > 0 else 'text-danger' }}">
+                                {{ "%.2f"|format(analysis.price_change) }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">Market Sentiment</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">Trend Strength</div>
+                            <div class="col-6 text-end">
+                                <span class="badge bg-{{ 'success' if analysis.trend_strength > 50 else 'warning' }}">
+                                    {{ "%.0f"|format(analysis.trend_strength) }}%
+                                </span>
+                            </div>
+                            <div class="col-6">Volatility (ATR)</div>
+                            <div class="col-6 text-end">{{ "%.2f"|format(analysis.atr) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicators Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for indicator in analysis.indicators %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>{{ indicator.name }}</span>
+                        <i class="bi bi-{{ 'check-circle-fill text-success' if indicator.signal == 'Bullish' else 'x-circle-fill text-danger' }}"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ indicator.value }}</h5>
+                        <p class="card-text text-muted">{{ indicator.interpretation }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Trading Plan -->
+        <div class="card mt-4">
+            <div class="card-header">Suggested Trading Plan</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-muted">Entry Point</div>
+                        <h4>{{ "%.2f"|format(analysis.plan.entry) }}</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted">Stop Loss</div>
+                        <h4 class="text-danger">{{ "%.2f"|format(analysis.plan.stop_loss) }}</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted">Take Profit</div>
+                        <h4 class="text-success">{{ "%.2f"|format(analysis.plan.target) }}</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted">Risk/Reward</div>
+                        <h4>{{ analysis.plan.risk_reward|string }}:1</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

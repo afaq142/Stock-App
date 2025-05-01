@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>Stock Analysis Generator</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('plain_analysis') }}">
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <label for="symbol" class="form-label">Select Stock:</label>
+                        <select class="form-select" id="symbol" name="symbol" required>
+                            <option value="" disabled selected>Choose a stock...</option>
+                            {% for company in companies %}
+                            <option value="{{ company.symbol }}">{{ company.symbol }} - {{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-graph-up"></i> Generate Analysis
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="alert alert-info">
+                <h5><i class="bi bi-info-circle"></i> How to use:</h5>
+                <ol>
+                    <li>Select a stock from the dropdown</li>
+                    <li>Click "Generate Analysis"</li>
+                    <li>View your complete text-based analysis</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Database Overview</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Company List</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for company in companies %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ company.symbol }}</h5>
+                            <p class="card-text">{{ company.name }}</p>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">
+                                    Added: {{ company.created_at.strftime('%Y-%m-%d') }}
+                                </small>
+                                <button class="btn btn-sm btn-primary view-stock" 
+                                        data-symbol="{{ company.symbol }}">
+                                    View Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Stock Data Visualization</h5>
+        </div>
+        <div class="card-body">
+            <div id="chart-container" class="mb-4" style="height: 400px;"></div>
+            <div id="data-table" class="table-responsive">
+                <!-- Dynamic table will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.view-stock').forEach(button => {
+    button.addEventListener('click', function() {
+        const symbol = this.dataset.symbol;
+        
+        // Fetch stock data
+        fetch(`/api/stock-data/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update chart
+                const dates = data.map(d => d.date);
+                const closes = data.map(d => d.close);
+                
+                Plotly.newPlot('chart-container', [{
+                    x: dates,
+                    y: closes,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Close Price'
+                }], {
+                    title: `${symbol} Price History`,
+                    xaxis: {title: 'Date'},
+                    yaxis: {title: 'Price'}
+                });
+
+                // Update table
+                const tableHtml = `
+                    <h6 class="mt-4">${symbol} Historical Data</h6>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Open</th>
+                                <th>High</th>
+                                <th>Low</th>
+                                <th>Close</th>
+                                <th>Volume</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(d => `
+                                <tr>
+                                    <td>${d.date}</td>
+                                    <td>${d.open.toFixed(2)}</td>
+                                    <td>${d.high.toFixed(2)}</td>
+                                    <td>${d.low.toFixed(2)}</td>
+                                    <td>${d.close.toFixed(2)}</td>
+                                    <td>${d.volume.toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('data-table').innerHTML = tableHtml;
+            });
+    });
+});
+</script>
+{% endblock %}

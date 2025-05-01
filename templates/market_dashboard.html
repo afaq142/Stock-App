@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="my-4">Market Overview Dashboard</h2>
+    
+    <!-- Summary Cards -->
+    <div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
+        <div class="col">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Stocks</h5>
+                    <h2>{{ market_data|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Average Daily Change</h5>
+                    <h2>{{ "%.2f"|format((market_data|sum(attribute='change')/market_data|length)) }}%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Volume</h5>
+                    <h2>{{ (market_data|sum(attribute='volume')|int)//1e6 }}M</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Avg Volatility</h5>
+                    <h2>{{ "%.2f"|format((market_data|sum(attribute='volatility')/market_data|length)) }}%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Price Distribution</div>
+                <div class="card-body">
+                    <div id="priceDistribution" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Market Trend Analysis</div>
+                <div class="card-body">
+                    <div id="marketTrendChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Volatility Analysis</div>
+                <div class="card-body">
+                    <div id="volatilityAnalysis" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Volume Analysis</div>
+                <div class="card-body">
+                    <div id="volumeAnalysis" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Tables -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Top Gainers <i class="bi bi-arrow-up"></i></div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Stock</th>
+                                <th>Price</th>
+                                <th>Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in plot_data.top_gainers %}
+                            <tr class="table-success">
+                                <td>{{ stock.symbol }}</td>
+                                <td>{{ "%.2f"|format(stock.price) }}</td>
+                                <td class="text-success">{{ "%.2f"|format(stock.change) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Volume Leaders <i class="bi bi-bar-chart"></i></div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Stock</th>
+                                <th>Volume</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in plot_data.volume_leaders %}
+                            <tr>
+                                <td>{{ stock.symbol }}</td>
+                                <td>{{ (stock.volume|int)//1e6 }}M</td>
+                                <td>{{ "%.2f"|format(stock.price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Top Losers <i class="bi bi-arrow-down"></i></div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Stock</th>
+                                <th>Price</th>
+                                <th>Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in plot_data.top_losers %}
+                            <tr class="table-danger">
+                                <td>{{ stock.symbol }}</td>
+                                <td>{{ "%.2f"|format(stock.price) }}</td>
+                                <td class="text-danger">{{ "%.2f"|format(stock.change) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plotly Charts Script -->
+<script>
+    // Price Distribution
+    Plotly.newPlot('priceDistribution', 
+        {{ plot_data.price_distribution.data|tojson }}, 
+        {{ plot_data.price_distribution.layout|tojson }}
+    );
+
+    // Market Trend Chart
+    Plotly.newPlot('marketTrendChart', 
+        {{ plot_data.market_trend.data|tojson }}, 
+        {{ plot_data.market_trend.layout|tojson }}
+    );
+
+    // Volatility Analysis
+    Plotly.newPlot('volatilityAnalysis', 
+        {{ plot_data.volatility_analysis.data|tojson }}, 
+        {{ plot_data.volatility_analysis.layout|tojson }}
+    );
+
+    // Volume Analysis
+    Plotly.newPlot('volumeAnalysis', 
+        {{ plot_data.volume_analysis.data|tojson }}, 
+        {{ plot_data.volume_analysis.layout|tojson }}
+    );
+</script>
+
+<style>
+    .card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: none;
+        border-radius: 15px;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+    }
+    .table-hover tbody tr:hover td {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    .table-success:hover td {
+        background-color: rgba(40, 167, 69, 0.1)!important;
+    }
+    .table-danger:hover td {
+        background-color: rgba(220, 53, 69, 0.1)!important;
+    }
+</style>
+{% endblock %}
