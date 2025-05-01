@@ -13,5 +13,5 @@ TA-Lib==0.4.26  # Stable version (works with Python 3.7–3.10)
 # TA-Lib>=0.6.0  # If using Python 3.11+
 
 # Optional: If you need specific versions (adjust as needed)
-# scipy>=1.0.0
-# matplotlib>=3.0.0  # For plotting
+scipy>=1.0.0
+matplotlib>=3.0.0  # For plotting
