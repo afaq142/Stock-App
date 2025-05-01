@@ -1,7 +1,17 @@
 Flask==2.1.2
 Flask-SQLAlchemy==2.5.1
 pandas==1.4.2
-numpy==1.22.3
-TA-Lib==0.4.0
 werkzeug==2.1.2
 SQLAlchemy==1.4.36
+
+# Core requirements
+numpy>=1.21.0  # Ensure compatibility with TA-Lib
+pandas>=1.0.0   # Often used alongside TA-Lib
+
+# TA-Lib (choose one of the following options)
+TA-Lib==0.4.26  # Stable version (works with Python 3.7–3.10)
+# TA-Lib>=0.6.0  # If using Python 3.11+
+
+# Optional: If you need specific versions (adjust as needed)
+# scipy>=1.0.0
+# matplotlib>=3.0.0  # For plotting
